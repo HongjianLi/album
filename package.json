@@ -1,0 +1,12 @@
+{
+	"name": "album-saver",
+	"version": "1.0.0",
+	"description": "Save music albums.",
+	"author": "Hongjian Li",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/HongjianLi/album-saver.git"
+	},
+	"license": "MIT"
+}
