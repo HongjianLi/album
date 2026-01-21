@@ -20,10 +20,10 @@ for (const c of cArr) {
 		console.log(`Timeout:`, c);
 		continue;
 	}
-	await new Promise(resolve => setTimeout(resolve, 1000 ));
+	await new Promise(resolve => setTimeout(resolve, 1000));
 	await page.evaluate(f => {
 		f ? file_save() : bulk_file_save();
 	}, c.split('/')[3] === 'f');
-	await new Promise(resolve => setTimeout(resolve, 2000 ));
+	await new Promise(resolve => setTimeout(resolve, 2000));
 }
 await browser.close();
