@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'fs/promises';
 import puppeteer from 'puppeteer-core';
-const cArr = (await fs.readFile('sina-blog/entry.tsv')).toString().split('\n');
+const cArr = (await fs.readFile('entry.tsv')).toString().split('\n');
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
 });
