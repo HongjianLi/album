@@ -15,7 +15,7 @@ const [ page ] = await browser.pages();
 for (const c of cArr) {
 	await page.goto(c);
 	let timeout = false;
-	await page.waitForSelector('button::-p-text(转存文件)', { timeout: 3000 }).catch(() => {timeout = true}); // Error 404
+	await page.waitForSelector('button::-p-text(转存文件)', { timeout: 4000 }).catch(() => {timeout = true}); // Error 404
 	if (timeout) {
 		console.log(`Timeout:`, c);
 		continue;
