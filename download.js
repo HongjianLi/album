@@ -4,7 +4,7 @@ import path from 'path';
 import puppeteer from 'puppeteer-core';
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-	headless: false,
+//	headless: false,
 });
 browser.setCookie({
 	"name": "ctfile_session",
@@ -14,12 +14,31 @@ browser.setCookie({
 });
 const [ page ] = await browser.pages();
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
-console.assert(iTotalRecords * 2 === aaData.length, `iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`)
-const fileIdArr = aaData.slice(iTotalRecords).map(aa => {
-	return aa[1].match(/file_download\((\d+),/)[1];
+console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
+console.assert(iTotalRecords <= aaData.length);
+const fileArr = aaData.slice(-iTotalRecords).map(aa => ({
+	id: aa[1].match(/file_download\((\d+),/)[1],
+	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
+	downloadWillBegin: Promise.withResolvers(),
+	downloadProgress: Promise.withResolvers(),
+}));
+console.assert(fileArr.length === iTotalRecords);
+console.log(`Found ${fileArr.length} files`);
+let fileIndex;
+await page.setRequestInterception(true);
+page.on('request', req => {
+	const url = req.url();
+	console.log(`Intercepting the request to`, url);
+	console.log('fileIndex', fileIndex);
+	const file = fileArr[fileIndex];
+	if (req.isNavigationRequest() && !['https://home.ctfile.com/iajax.php', 'https://group1-cmcc-data.bego.cc/', 'https://group1-cucc-data.bego.cc/', 'https://group1-ctc-data.bego.cc/'].some(host => url.startsWith(host))) {
+		console.log('Aborting');
+		req.abort('aborted'); // Abort the navigation request, e.g. to https://590m.com/premium/0/2
+		file.navigation.resolve(false);
+	} else {
+		req.continue(); // Allow other requests.
+	}
 });
-console.assert(fileIdArr.length === iTotalRecords);
-console.log(`Found ${fileIdArr.length} files`);
 // The following code is adapted from https://www.scrapingbee.com/blog/download-file-puppeteer/
 const client = await page.createCDPSession();
 await client.send('Browser.setDownloadBehavior', {
@@ -27,52 +46,63 @@ await client.send('Browser.setDownloadBehavior', {
 	downloadPath: path.resolve('downloads'),
 	eventsEnabled: true,
 });
-for (let i = 0; i < 1; ++i) {
-	const fileId = fileIdArr[i];
-	console.log(`Downloading file ${i} of id ${fileId}`);
-	await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${fileId}`);
-	await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
-	await page.$$eval('a.node-download-btn[data-node="cmnet"]', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
-	const [ eventCompleted ] = await Promise.all([
-		new Promise((resolve, reject) => {
-			let guid = null;
-			const timeout = setTimeout(() => {
-				cleanup();
-				reject(new Error('Timeout waiting for Browser.downloadProgress'));
-			}, 90000);
-			const onWillBegin = (event) => {
-				console.log('onWillBegin', event); // event: { frameId, guid, url, suggestedFilename }
-				guid = event.guid;
-			};
-			const onProgress = (event) => {
-				console.log('onProgress', event); // event: { guid, totalBytes, receivedBytes, state, filePath? }
-				if (guid && event.guid !== guid) return;
-				if (event.state === 'completed') {
-					cleanup();
-					resolve(event);
-				} else if (event.state === 'canceled') {
-					cleanup();
-					reject(new Error('Download was canceled'));
-				}
-			};
-			const cleanup = () => {
-				clearTimeout(timeout);
-				client.off('Browser.downloadWillBegin', onWillBegin);
-				client.off('Browser.downloadProgress', onProgress);
-			};
-			client.on('Browser.downloadWillBegin', onWillBegin);
-			client.on('Browser.downloadProgress', onProgress);
-		}),
-		page.click('a.node-download-btn[data-node="cmnet"]'),
-	]);
-	console.log(eventCompleted)
-	const { filePath } = eventCompleted;
+client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, url, suggestedFilename }
+	console.log('downloadWillBegin', event);
+	console.log('fileIndex', fileIndex);
+	const file = fileArr[fileIndex];
+	Object.keys(event).forEach(key => {
+		file[key] = event[key];
+	});
+	file.downloadWillBegin.resolve(true);
+});
+client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes, receivedBytes, state, filePath? }
+//	console.log('downloadProgress', event);
+	const file = fileArr.find(file => file.guid === event.guid);
+	Object.keys(event).forEach(key => {
+		file[key] = event[key];
+	});
+	if (['completed', 'canceled'].includes(event.state)) {
+		file.downloadProgress.resolve(file);
+	} else {
+		console.assert(event.state === 'inProgress', event.state);
+//		console.log(file);
+	}
+});
+for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
+	const file = fileArr[fileIndex];
+	console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}`);
+	for (let nodeIndex = 3; true; --nodeIndex) {
+		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
+		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
+		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
+		if (nodeIndex === 0) nodeIndex = 3;
+		console.log(`Clicking a.node-download-btn:nth-of-type(${nodeIndex})`); // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
+		file.navigation = Promise.withResolvers();
+		const [ downloading ] = await Promise.all([
+			Promise.any([
+				file.downloadWillBegin.promise,
+				file.navigation.promise,
+			]),
+			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`),
+		]);
+		if (downloading) break;
+		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
+	}
+}
+console.log('Waiting for completed events...')
+while (true) {
+	const fileArrInProgress = fileArr.filter(file => !file.completed);
+	if (!fileArrInProgress.length) break;
+	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise));
+	console.log('Download completed', file);
+	const { filePath } = file;
 	await waitForFileStable(filePath);
 	console.log('Verified download file:', filePath);
-//	console.log(`Deleting file ${fileId}`);
-//	await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${fileId}').then(r => r.json());
-//	console.assert(r.code === 200);
-//	console.log(`Deleted file ${fileId}`);
+	file.completed = true;
+	console.log(`Deleting file ${file.id}`);
+	const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
+	console.assert(res.code === 200);
+	console.log(`Deleted file ${file.id}`);
 // Download can be monitored or retried at chrome://downloads
 }
 await browser.close();
@@ -91,7 +121,15 @@ async function waitForFileStable(filePath) {
 				if (stable >= 3) return;
 			}
 		}
-		await new Promise((r) => setTimeout(r, 250));
+		await new Promise(r => setTimeout(r, 250));
 	}
-	throw new Error(`Download completed event fired, but file did not appear (or was not stable): ${filePath}`);
+//	throw new Error(`File not stable: ${filePath}`);
 }
+
+// See the window.formatFileSize() function in https://homestatic.ctfile.com/assets/js/file-list-helper.js
+function formatFileSize(bytes) {
+	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+	const k = 1024;
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+};
