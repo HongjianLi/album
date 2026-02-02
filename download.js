@@ -16,7 +16,8 @@ const [ page ] = await browser.pages();
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
 console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
 console.assert(iTotalRecords <= aaData.length);
-const fileArr = aaData.slice(-iTotalRecords).map(aa => ({
+const fileArr = aaData.slice(-iTotalRecords).slice(0, 6).map((aa, index) => ({
+	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
 	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
 	downloadWillBegin: Promise.withResolvers(),
@@ -62,7 +63,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file[key] = event[key];
 	});
 	if (['completed', 'canceled'].includes(event.state)) {
-		file.downloadProgress.resolve(file);
+		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause circular reference.
 	} else {
 		console.assert(event.state === 'inProgress', event.state);
 //		console.log(file);
@@ -78,31 +79,36 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		if (nodeIndex === 0) nodeIndex = 3;
 		console.log(`Clicking a.node-download-btn:nth-of-type(${nodeIndex})`); // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
 		file.navigation = Promise.withResolvers();
-		const [ downloading ] = await Promise.all([
+		const [ downloadWillBeginFired ] = await Promise.all([
 			Promise.any([
 				file.downloadWillBegin.promise,
 				file.navigation.promise,
 			]),
 			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`),
 		]);
-		if (downloading) break;
+		if (downloadWillBeginFired) break;
 		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
 	}
 }
-console.log('Waiting for completed events...')
+console.log('Waiting for completed or canceled events...');
 while (true) {
-	const fileArrInProgress = fileArr.filter(file => !file.completed);
+	const fileArrInProgress = fileArr.filter(file => file.state === 'inProgress');
+	console.log(`Found ${fileArrInProgress.length} files still in progress...`);
 	if (!fileArrInProgress.length) break;
-	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise));
-	console.log('Download completed', file);
-	const { filePath } = file;
-	await waitForFileStable(filePath);
-	console.log('Verified download file:', filePath);
-	file.completed = true;
-	console.log(`Deleting file ${file.id}`);
-	const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
-	console.assert(res.code === 200);
-	console.log(`Deleted file ${file.id}`);
+	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise)).then(index => fileArr[index]);
+	console.log('File state changed', file);
+	if (file.state === 'completed') {
+//		console.log('Waiting for file stable');
+//		const { filePath } = file;
+//		await waitForFileStable(filePath);
+		const stat = fs.statSync(file.filePath);
+		const size = formatFileSize(stat.size);
+		console.assert(size === file.size, `size = ${size}, file.size = ${file.size}`);
+		console.log(`Deleting file ${file.id}`);
+		const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
+		console.assert(res.code === 200, res);
+		console.log(`Deleted file ${file.id}`);
+	}
 // Download can be monitored or retried at chrome://downloads
 }
 await browser.close();
