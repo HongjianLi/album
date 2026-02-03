@@ -98,7 +98,7 @@ while (true) {
 //		const { filePath } = file;
 //		await waitForFileStable(filePath);
 		const { size } = fs.statSync(file.filePath);
-		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`);
+		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
 		const sizeStr = formatFileSize(size);
 		console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
 		console.log(`Deleting file ${file.id}`);
@@ -134,5 +134,5 @@ function formatFileSize(bytes) {
 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
 	const k = 1024;
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+	return `${(bytes / Math.pow(k, i)).toFixed(i ? 2 : 0)} ${units[i]}`;
 };
