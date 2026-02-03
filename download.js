@@ -16,7 +16,7 @@ const [ page ] = await browser.pages();
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
 console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
 console.assert(iTotalRecords <= aaData.length);
-const fileArr = aaData.slice(-iTotalRecords).slice(0, 6).map((aa, index) => ({
+const fileArr = aaData.slice(-iTotalRecords).slice(0, 4).map((aa, index) => ({
 	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
 	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
@@ -86,11 +86,10 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
 	}
 }
-// Wait for file.state changed to inProgress
 console.log('Waiting for completed or canceled events...');
 while (true) {
-	const fileArrInProgress = fileArr.filter(file => file.state === 'inProgress');
-	console.log(`Found ${fileArrInProgress.length} files still in progress...`);
+	const fileArrInProgress = fileArr.filter(file => [undefined, 'inProgress'].includes(file.state)); // state === undefined indicates downloadWillBegin fired but downloadProgress not yet.
+	console.log(`Found ${fileArrInProgress.length} files in progress...`);
 	if (!fileArrInProgress.length) break;
 	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise)).then(index => fileArr[index]);
 	console.log('File state changed', file);
@@ -98,9 +97,10 @@ while (true) {
 //		console.log('Waiting for file stable');
 //		const { filePath } = file;
 //		await waitForFileStable(filePath);
-		const stat = fs.statSync(file.filePath);
-		const size = formatFileSize(stat.size);
-		console.assert(size === file.size, `size = ${size}, file.size = ${file.size}`);
+		const { size } = fs.statSync(file.filePath);
+		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`);
+		const sizeStr = formatFileSize(size);
+		console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
 		console.log(`Deleting file ${file.id}`);
 		const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
 		console.assert(res.code === 200, res);
