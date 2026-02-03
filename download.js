@@ -88,6 +88,8 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	}
 }
 console.log('Waiting for completed or canceled events...');
+const sizeUnitArr = ['B', 'KB', 'MB', 'GB', 'TB'];
+const sizeUnitK = 1024;
 while (true) {
 	const fileArrInProgress = fileArr.filter(file => [undefined, 'inProgress'].includes(file.state)); // state === undefined indicates downloadWillBegin fired but downloadProgress not yet.
 	console.log(`Found ${fileArrInProgress.length} files in progress...`);
@@ -100,7 +102,8 @@ while (true) {
 //		await waitForFileStable(filePath);
 		const { size } = fs.statSync(file.filePath);
 		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
-		const sizeStr = formatFileSize(size);
+		const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
+		const sizeStr = `${(size / Math.pow(sizeUnitK, sizeUnitIndex)).toFixed(sizeUnitIndex ? 2 : 0)} ${sizeUnitArr[sizeUnitIndex]}`;
 		console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
 		console.log(`Deleting file ${file.id}`);
 		const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
@@ -129,11 +132,3 @@ async function waitForFileStable(filePath) {
 	}
 //	throw new Error(`File not stable: ${filePath}`);
 }
-
-// See the window.formatFileSize() function in https://homestatic.ctfile.com/assets/js/file-list-helper.js
-function formatFileSize(bytes) {
-	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-	const k = 1024;
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return `${(bytes / Math.pow(k, i)).toFixed(i ? 2 : 0)} ${units[i]}`;
-};
