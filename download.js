@@ -20,7 +20,6 @@ const fileArr = aaData.slice(-iTotalRecords).slice(0, 6).map((aa, index) => ({
 	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
 	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
-	downloadWillBegin: Promise.withResolvers(),
 	downloadProgress: Promise.withResolvers(),
 }));
 console.assert(fileArr.length === iTotalRecords);
@@ -35,7 +34,7 @@ page.on('request', req => {
 	if (req.isNavigationRequest() && !['https://home.ctfile.com/iajax.php', 'https://group1-cmcc-data.bego.cc/', 'https://group1-cucc-data.bego.cc/', 'https://group1-ctc-data.bego.cc/'].some(host => url.startsWith(host))) {
 		console.log('Aborting');
 		req.abort('aborted'); // Abort the navigation request, e.g. to https://590m.com/premium/0/2
-		file.navigation.resolve(false);
+		file.downloadWillBegin.resolve(false);
 	} else {
 		req.continue(); // Allow other requests.
 	}
@@ -63,7 +62,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file[key] = event[key];
 	});
 	if (['completed', 'canceled'].includes(event.state)) {
-		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause circular reference.
+		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
 	} else {
 		console.assert(event.state === 'inProgress', event.state);
 //		console.log(file);
@@ -78,18 +77,16 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
 		if (nodeIndex === 0) nodeIndex = 3;
 		console.log(`Clicking a.node-download-btn:nth-of-type(${nodeIndex})`); // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
-		file.navigation = Promise.withResolvers();
+		file.downloadWillBegin = Promise.withResolvers();
 		const [ downloadWillBeginFired ] = await Promise.all([
-			Promise.any([
-				file.downloadWillBegin.promise,
-				file.navigation.promise,
-			]),
+			file.downloadWillBegin.promise,
 			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`),
 		]);
 		if (downloadWillBeginFired) break;
 		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
 	}
 }
+// Wait for file.state changed to inProgress
 console.log('Waiting for completed or canceled events...');
 while (true) {
 	const fileArrInProgress = fileArr.filter(file => file.state === 'inProgress');
