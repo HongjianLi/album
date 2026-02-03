@@ -97,9 +97,6 @@ while (true) {
 	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise)).then(index => fileArr[index]);
 	console.log('File state changed', file);
 	if (file.state === 'completed') {
-//		console.log('Waiting for file stable');
-//		const { filePath } = file;
-//		await waitForFileStable(filePath);
 		const { size } = fs.statSync(file.filePath);
 		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
 		const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
@@ -113,22 +110,3 @@ while (true) {
 // Download can be monitored or retried at chrome://downloads
 }
 await browser.close();
-
-async function waitForFileStable(filePath) {
-	const start = Date.now();
-	let lastSize = -1;
-	let stable = 0;
-	while (Date.now() - start < 30000) {
-		if (fs.existsSync(filePath)) {
-			const stat = fs.statSync(filePath);
-			if (stat.isFile() && stat.size > 0) {
-				if (stat.size === lastSize) stable++;
-				else stable = 0;
-				lastSize = stat.size;
-				if (stable >= 3) return;
-			}
-		}
-		await new Promise(r => setTimeout(r, 250));
-	}
-//	throw new Error(`File not stable: ${filePath}`);
-}
