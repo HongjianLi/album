@@ -24,22 +24,19 @@ const fileArr = aaData.slice(-iTotalRecords).slice(0, 4).map((aa, index) => ({
 	downloadProgress: Promise.withResolvers(),
 }));
 console.assert(fileArr.length === iTotalRecords);
-console.log(`Found ${fileArr.length} files`);
+console.log(`Found ${fileArr.length} files to download`);
 let fileIndex;
 await page.setRequestInterception(true);
 page.on('request', req => {
-	const url = req.url();
-	console.log(`Intercepting the request to`, url);
 	// Typical urls are:
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}
 	// https://home.ctfile.com/assets/icons/rar.svg
 	// https://group1-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
 	// https://590m.com/premium/0/2
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}
-	console.log('fileIndex', fileIndex);
+	const url = req.url();
 	const file = fileArr[fileIndex];
 	if (req.isNavigationRequest() && !['https://home.ctfile.com/iajax.php', 'https://group1-cmcc-data.bego.cc/', 'https://group1-cucc-data.bego.cc/', 'https://group1-ctc-data.bego.cc/'].some(host => url.startsWith(host))) {
-		console.log('Aborting');
 		req.abort('aborted'); // Abort the navigation request, e.g. to https://590m.com/premium/0/2
 		file.downloadWillBegin.resolve(false);
 	} else {
@@ -54,8 +51,6 @@ await client.send('Browser.setDownloadBehavior', {
 	eventsEnabled: true,
 });
 client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, url, suggestedFilename }
-	console.log('downloadWillBegin', event);
-	console.log('fileIndex', fileIndex);
 	const file = fileArr[fileIndex];
 	Object.keys(event).forEach(key => {
 		file[key] = event[key];
@@ -64,7 +59,6 @@ client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, u
 	file.downloadWillBegin.resolve(true);
 });
 client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes, receivedBytes, state, filePath? }
-//	console.log('downloadProgress', event);
 	const file = fileArr.find(file => file.guid === event.guid);
 	Object.keys(event).forEach(key => {
 		file[key] = event[key];
@@ -75,8 +69,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
 	} else {
-		console.assert(event.state === 'inProgress', event.state);
-//		console.log(file);
+		console.assert(event.state === 'inProgress', event);
 	}
 });
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
@@ -87,11 +80,10 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
 		if (nodeIndex === 0) nodeIndex = 3;
-		console.log(`Clicking a.node-download-btn:nth-of-type(${nodeIndex})`); // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
 		file.downloadWillBegin = Promise.withResolvers();
 		const [ downloadWillBeginFired ] = await Promise.all([
 			file.downloadWillBegin.promise,
-			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`),
+			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`), // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
 		]);
 		if (downloadWillBeginFired) break;
 		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
