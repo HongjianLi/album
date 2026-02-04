@@ -54,6 +54,7 @@ client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, u
 	Object.keys(event).forEach(key => {
 		file[key] = event[key];
 	});
+	file.now0 = Date.now();
 	file.downloadWillBegin.resolve(true);
 });
 client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes, receivedBytes, state, filePath? }
@@ -63,6 +64,9 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file[key] = event[key];
 	});
 	if (['completed', 'canceled'].includes(event.state)) {
+		file.now1 = Date.now();
+		file.duration = file.now1 - file.now0; // in milliseconds.
+		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
 	} else {
 		console.assert(event.state === 'inProgress', event.state);
