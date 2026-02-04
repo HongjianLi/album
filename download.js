@@ -30,6 +30,12 @@ await page.setRequestInterception(true);
 page.on('request', req => {
 	const url = req.url();
 	console.log(`Intercepting the request to`, url);
+	// Typical urls are:
+	// https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}
+	// https://home.ctfile.com/assets/icons/rar.svg
+	// https://group1-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
+	// https://590m.com/premium/0/2
+	// https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}
 	console.log('fileIndex', fileIndex);
 	const file = fileArr[fileIndex];
 	if (req.isNavigationRequest() && !['https://home.ctfile.com/iajax.php', 'https://group1-cmcc-data.bego.cc/', 'https://group1-cucc-data.bego.cc/', 'https://group1-ctc-data.bego.cc/'].some(host => url.startsWith(host))) {
