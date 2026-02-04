@@ -17,7 +17,7 @@ await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/5
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
 console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
 console.assert(iTotalRecords <= aaData.length);
-const fileArr = aaData.slice(-iTotalRecords).slice(0, 4).map((aa, index) => ({
+const fileArr = aaData.slice(-iTotalRecords).map((aa, index) => ({
 	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
 	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
@@ -25,6 +25,8 @@ const fileArr = aaData.slice(-iTotalRecords).slice(0, 4).map((aa, index) => ({
 }));
 console.assert(fileArr.length === iTotalRecords);
 console.log(`Found ${fileArr.length} files to download`);
+const sizeUnitArr = ['B', 'KB', 'MB', 'GB', 'TB'];
+const sizeUnitK = 1024;
 let fileIndex;
 await page.setRequestInterception(true);
 page.on('request', req => {
@@ -68,47 +70,45 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.duration = file.now1 - file.now0; // in milliseconds.
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
+		console.log(`Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, state = ${file.state}, rate = ${file.rate}, suggestedFilename = ${file.suggestedFilename}`);
+		if (event.state === 'completed') {
+			const { size } = fs.statSync(file.filePath);
+			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
+			const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
+			const sizeStr = `${(size / Math.pow(sizeUnitK, sizeUnitIndex)).toFixed(sizeUnitIndex ? 2 : 0)} ${sizeUnitArr[sizeUnitIndex]}`;
+			console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
+			console.log(`Deleting file ${file.index}, id = ${file.id}`);
+			page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json()).then(res => {
+				console.assert(res.code === 200, res);
+				console.log(`Deleted file ${file.index}, id = ${file.id}`);
+			});
+		}
 	} else {
 		console.assert(event.state === 'inProgress', event);
 	}
 });
+const nodeArr = ['cmnet', 'telecom', 'unicom']; // 中国移动, 中国电信, 中国联通
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	const file = fileArr[fileIndex];
-	console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}`);
-	for (let nodeIndex = 3; true; --nodeIndex) {
+	console.log(`Trying to download file ${fileIndex}, id = ${file.id}, size = ${file.size}`);
+	for (let nodeIndex = 0; true; ++nodeIndex) {
 		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
-		if (nodeIndex === 0) nodeIndex = 3;
+		if (nodeIndex === nodeArr.length) nodeIndex = 0;
+		const node = nodeArr[nodeIndex];
 		file.downloadWillBegin = Promise.withResolvers();
 		const [ downloadWillBeginFired ] = await Promise.all([
 			file.downloadWillBegin.promise,
-			page.click(`a.node-download-btn:nth-of-type(${nodeIndex})`), // 3: cmnet 中国移动, 2: unicom 中国联通, 1: telecom 中国电信
+			page.click(`a.node-download-btn[data-node="${node}"]`),
 		]);
-		if (downloadWillBeginFired) break;
-		await new Promise(r => setTimeout(r, 2000)); // Pause for a while before retrying.
+		if (downloadWillBeginFired) {
+			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size} from ${node}`);
+			break;
+		}
+		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
 	}
 }
-console.log('Waiting for completed or canceled events...');
-const sizeUnitArr = ['B', 'KB', 'MB', 'GB', 'TB'];
-const sizeUnitK = 1024;
-while (true) {
-	const fileArrInProgress = fileArr.filter(file => [undefined, 'inProgress'].includes(file.state)); // state === undefined indicates downloadWillBegin fired but downloadProgress not yet.
-	console.log(`Found ${fileArrInProgress.length} files in progress...`);
-	if (!fileArrInProgress.length) break;
-	const file = await Promise.race(fileArrInProgress.map(file => file.downloadProgress.promise)).then(index => fileArr[index]);
-	console.log('File state changed', file);
-	if (file.state === 'completed') {
-		const { size } = fs.statSync(file.filePath);
-		console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
-		const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
-		const sizeStr = `${(size / Math.pow(sizeUnitK, sizeUnitIndex)).toFixed(sizeUnitIndex ? 2 : 0)} ${sizeUnitArr[sizeUnitIndex]}`;
-		console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
-		console.log(`Deleting file ${file.id}`);
-		const res = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json());
-		console.assert(res.code === 200, res);
-		console.log(`Deleted file ${file.id}`);
-	}
 // Download can be monitored or retried at chrome://downloads
-}
+await Promise.all(fileArr.map(file => file.downloadProgress.promise));
 await browser.close();
