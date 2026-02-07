@@ -93,7 +93,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		console.assert(event.state === 'inProgress', event);
 	}
 });
-const nodeArr = ['cmnet', 'telecom', 'unicom']; // 中国移动, 中国电信, 中国联通
+const nodeArr = ['cmnet', 'telecom', 'unicom', 'usw']; // Try downloading in this order of priority: cmnet 中国移动, telecom 中国电信, unicom 中国联通, usw 海外
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	const file = fileArr[fileIndex];
 	console.log(`Trying to download file ${fileIndex}, id = ${file.id}, size = ${file.size}`);
