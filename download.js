@@ -82,6 +82,11 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 				console.assert(res.code === 200, res);
 				console.log(`Deleted file ${file.index}, id = ${file.id}`);
 			});
+		} else {
+			console.log(`Resuming file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}`);
+			client.send('Downloads.resume', { guid: file.guid }).then(res => {
+				console.log(`Resumed file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, res = ${res}`);
+			});
 		}
 	} else {
 		console.assert(event.state === 'inProgress', event);
