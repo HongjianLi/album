@@ -71,7 +71,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.duration = file.now1 - file.now0; // in milliseconds.
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
-		console.log(`Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, state = ${file.state}, rate = ${file.rate}, suggestedFilename = ${file.suggestedFilename}`);
+		console.log(`Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(0)} KB/s`);
 		if (event.state === 'completed') {
 			const { size } = fs.statSync(file.filePath);
 			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
@@ -84,9 +84,9 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 				console.log(`Deleted file ${file.index}, id = ${file.id}`);
 			});
 		} else {
-			console.log(`Resuming file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}`);
+			console.log(`Resuming file ${file.index}, guid = ${file.guid}`);
 			client.send('Downloads.resume', { guid: file.guid }).then(res => {
-				console.log(`Resumed file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, res = ${res}`);
+				console.log(`Resumed file ${file.index}, guid = ${file.guid}, res = ${res}`);
 			});
 		}
 	} else {
@@ -109,7 +109,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			page.click(`a.node-download-btn[data-node="${node}"]`),
 		]);
 		if (downloadWillBeginFired) {
-			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}, hostname = ${file.hostname}`);
+			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
 		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
