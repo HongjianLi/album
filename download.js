@@ -33,13 +33,13 @@ page.on('request', req => {
 	// Typical urls are:
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}
 	// https://home.ctfile.com/assets/icons/rar.svg
-	// https://group1-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
+	// https://{88,94,group1}-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
 	// https://590m.com/premium/0/2
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}
 	const url = req.url();
-	const file = fileArr[fileIndex];
-	if (req.isNavigationRequest() && !['https://home.ctfile.com/iajax.php', 'https://group1-cmcc-data.bego.cc/', 'https://group1-cucc-data.bego.cc/', 'https://group1-ctc-data.bego.cc/'].some(host => url.startsWith(host))) {
+	if (req.isNavigationRequest() && url.startsWith('https://590m.com/premium')/*!['home.ctfile.com', '-data.bego.cc'].some(allowedHostname => URL.parse(url).hostname.endsWith(allowedHostname))*/) {
 		req.abort('aborted'); // Abort the navigation request, e.g. to https://590m.com/premium/0/2
+		const file = fileArr[fileIndex];
 		file.downloadWillBegin.resolve(false);
 	} else {
 		req.continue(); // Allow other requests.
