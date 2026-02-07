@@ -57,6 +57,7 @@ client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, u
 	Object.keys(event).forEach(key => {
 		file[key] = event[key];
 	});
+	file.hostname = URL.parse(file.url).hostname;
 	file.now0 = Date.now();
 	file.downloadWillBegin.resolve(true);
 });
@@ -108,7 +109,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			page.click(`a.node-download-btn[data-node="${node}"]`),
 		]);
 		if (downloadWillBeginFired) {
-			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size} from ${node}`);
+			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}, hostname = ${file.hostname}`);
 			break;
 		}
 		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
