@@ -17,7 +17,7 @@ await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/5
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
 console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
 console.assert(iTotalRecords <= aaData.length);
-const fileArr = aaData.slice(-iTotalRecords).map((aa, index) => ({
+const fileArr = aaData.slice(-iTotalRecords).reverse().map((aa, index) => ({ // .reverse() to start from the oldest to the newest.
 	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
 	size: aa[2].match(/(\d+\.\d{2} [MG]B)/)[1], // Album file sizes are typically in the MB or GB ranges.
@@ -33,7 +33,7 @@ page.on('request', req => {
 	// Typical urls are:
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}
 	// https://home.ctfile.com/assets/icons/rar.svg
-	// https://{88,94,group1}-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
+	// https://{88,90,94,group1}-{cmcc,cucc,ctc}-data.bego.cc/down/${guid}/...rar
 	// https://590m.com/premium/0/2
 	// https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}
 	const url = req.url();
@@ -91,7 +91,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 const nodeArr = ['cmnet', 'telecom', 'unicom', 'usw']; // Try downloading in this order of priority: cmnet 中国移动, telecom 中国电信, unicom 中国联通, usw 海外
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	const file = fileArr[fileIndex];
-	console.log(`Trying to download file ${fileIndex}, id = ${file.id}, size = ${file.size}`);
+	console.log(`Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
 	for (let nodeIndex = 0; true; ++nodeIndex) {
 		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
@@ -104,7 +104,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			page.click(`a.node-download-btn[data-node="${node}"]`),
 		]);
 		if (downloadWillBeginFired) {
-			console.log(`Downloading file ${fileIndex}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
+			console.log(`Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
 		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
