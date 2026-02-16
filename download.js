@@ -109,8 +109,9 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			const etaInMinutes = etaInSeconds / 60;
 			const etaInHours = etaInMinutes / 60;
 			const etaH = Math.floor(etaInHours);
-			const etaM = etaInMinutes - 60 * etaH;
-			file.eta = `${new Date(Date.now() + 1000 * etaInSeconds).toLocaleTimeString('zh-CN')} (${etaH}h${etaM.toFixed(0)}m)`;
+			const etaM = Math.floor(etaInMinutes - 60 * etaH);
+			const etaS = Math.floor(etaInSeconds - 3600 * etaH - 60 * etaM);
+			file.eta = `${new Date(Date.now() + 1000 * etaInSeconds).toLocaleTimeString('zh-CN')} (${etaH}h${etaM}m${etaS}s)`;
 			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
