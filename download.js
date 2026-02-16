@@ -71,7 +71,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.duration = file.now1 - file.now0; // in milliseconds.
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
-		console.log(`Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(0)} KB/s`);
+		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(0)} KB/s`);
 		if (event.state === 'completed') {
 			const { size } = fs.statSync(file.filePath);
 			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
@@ -91,7 +91,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 const nodeArr = ['cmnet', 'telecom', 'unicom', 'usw']; // Try downloading in this order of priority: cmnet 中国移动, telecom 中国电信, unicom 中国联通, usw 海外
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	const file = fileArr[fileIndex];
-	console.log(`Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
+	console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
 	for (let nodeIndex = 0; true; ++nodeIndex) {
 		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
@@ -111,7 +111,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			const etaH = Math.floor(etaInHours);
 			const etaM = etaInMinutes - 60 * etaH;
 			file.eta = `${new Date(Date.now() + 1000 * etaInSeconds).toLocaleTimeString('zh-CN')} (${etaH}h${etaM.toFixed(0)}m)`;
-			console.log(`Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
+			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
 		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
