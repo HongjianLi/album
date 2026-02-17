@@ -7,7 +7,7 @@ const browser = await puppeteer.launch({
 });
 browser.setCookie(...[{
 	"name": "ctfile_session",
-	"value": "c5e485144ad80ae04dc43bd802620e5fa574216c02d9feb772e124bff6f68f0d",
+	"value": "084faf5a4c8541d2f32949a5175129c79b720b9d10e127ff4badfc11dc20f35d",
 	"domain": ".ctfile.com",
 	"expires": 2147483646
 }]);
@@ -21,9 +21,7 @@ for (const c of cArr) {
 		continue;
 	}
 	await new Promise(resolve => setTimeout(resolve, 1000));
-	await page.evaluate(f => {
-		f ? file_save() : bulk_file_save();
-	}, c.split('/')[3] === 'f');
+	await page.evaluate(f => { f ? file_save() : bulk_file_save() }, c.split('/')[3] === 'f');
 	await new Promise(resolve => setTimeout(resolve, 2000));
 }
 await browser.close();
