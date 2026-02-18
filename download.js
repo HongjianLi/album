@@ -71,7 +71,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.duration = file.now1 - file.now0; // in milliseconds.
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
-		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(0)} KB/s`);
+		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(2)} KB/s`);
 		if (event.state === 'completed') {
 			const { size } = fs.statSync(file.filePath);
 			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
@@ -105,7 +105,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		]);
 		if (downloadWillBeginFired) {
 			const [ sizeValue, sizeUnit ] = file.size.split(' ');
-			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit) - 1) / 40; // Download rate is limited to 40 KB/s by *-data.bego.cc.
+			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit) - 1) / 39.27; // Download rate is limited to 40 KB/s by *-data.bego.cc. Real rate is about 39.27 KB/s.
 			const etaInMinutes = etaInSeconds / 60;
 			const etaInHours = etaInMinutes / 60;
 			const etaH = Math.floor(etaInHours);
