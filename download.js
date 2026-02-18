@@ -115,7 +115,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
-		await new Promise(r => setTimeout(r, 5000)); // Pause for a while before retrying.
+		await new Promise(r => setTimeout(r, 61000)); // Pause for a while before retrying.
 	}
 }
 // Download can be monitored or retried at chrome://downloads
