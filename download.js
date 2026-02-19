@@ -120,6 +120,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 }
 // Download can be monitored or retried at chrome://downloads
 await Promise.all(fileArr.map(file => file.downloadProgress.promise));
+await new Promise(r => setTimeout(r, 6000)); // Wait for file_delete
 console.log('Closing browser');
 await browser.close();
 console.log('Closed browser');
