@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import puppeteer from 'puppeteer-core';
 const cArr = (await fs.readFile('entry.tsv')).toString().split('\n');
+console.log(`Found ${cArr.length} entries`);
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
 });
