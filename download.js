@@ -4,7 +4,6 @@ import path from 'path';
 import puppeteer from 'puppeteer-core';
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-//	headless: false,
 });
 browser.setCookie({
 	"name": "ctfile_session",
