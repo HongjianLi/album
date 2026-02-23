@@ -12,10 +12,11 @@ const browser = await puppeteer.launch({
 	headless: false,
 	defaultViewport: { width: 2560, height: 1200 },
 	args: ['--window-size=2560,1200'],
+	protocolTimeout: 400000, // Set the timeout to 400 s. Assuming a download rate of 5 MB/s, this timeout allows uploading 2000 MB. Default is 180000
 });
 const [ page ] = await browser.pages();
-await page.goto('https://www.alipan.com/drive/file/all/backup/653e682a4acb39c8ffdb44e9b77c5ce4f4fb7f1f', {waitUntil: 'networkidle2'}); // 全部文件 › 备份文件 › Music › Albums
-await page.waitForNavigation({ waitUntil: 'networkidle2'}); // Scan QR code to login. Wait for redirection to Music/Albums.
+await page.goto('https://www.alipan.com/drive/file/all/backup/653e682a4acb39c8ffdb44e9b77c5ce4f4fb7f1f', { waitUntil: 'networkidle2' }); // 全部文件 › 备份文件 › Music › Albums
+await page.waitForNavigation({ waitUntil: 'networkidle2' }); // Scan QR code to login. Wait for redirection to Music/Albums.
 try {
 for (const directory of directories) {
 	console.log(`Uploading directory ${directory}`);
@@ -34,11 +35,10 @@ for (const directory of directories) {
 		console.log(`size = ${subdirectorySize.toFixed(0)} MB, eta = ${eta} ms`);
 		await page.goto(`https://www.alipan.com/drive/file/all/backup/${guid}`, {waitUntil: 'networkidle2'}); // 全部文件 › 备份文件 › Music › Albums > ${artist}
 		await page.click('div#adrive-container-create-button');
-		await new Promise(r => setTimeout(r, 3000));
+		await new Promise(r => setTimeout(r, 2000));
 		const [fileChooser] = await Promise.all([
 			page.waitForFileChooser(),
 			page.click('body > div:last-of-type ul > li:last-of-type span'),
-//			page.click('div.item--awDkz::-p-text(上传文件夹)'),
 		]);
 		console.assert(fileChooser.isMultiple());
 		await fileChooser.accept([subdirectoryPath]);
