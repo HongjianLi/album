@@ -6,7 +6,6 @@ const root = 'downloads';
 const directories = (await fs.readdir(root, { withFileTypes: true })).filter(file => file.isDirectory()).map(dir => dir.name);
 console.log(`Found ${directories.length} directories to upload`);
 const artists = await fs.readFile('artists.json').then(JSON.parse); // This file stores the known artists that are already saved in alipan.
-console.log(`Read ${Object.keys(artists).length} artists`);
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
 	headless: false,
