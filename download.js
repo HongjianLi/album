@@ -70,7 +70,7 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.duration = file.now1 - file.now0; // in milliseconds.
 		file.rate = file.receivedBytes / file.duration; // in B/ms, or equivalently KB/s
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
-		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(2)} KB/s`);
+		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(2)} KB/s`);
 		if (event.state === 'completed') {
 			const { size } = fs.statSync(file.filePath);
 			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
@@ -111,7 +111,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			const etaM = Math.floor(etaInMinutes - 60 * etaH);
 			const etaS = Math.floor(etaInSeconds - 3600 * etaH - 60 * etaM);
 			file.eta = `${new Date(Date.now() + 1000 * etaInSeconds).toLocaleTimeString('zh-CN')} (${etaH}h${etaM}m${etaS}s)`;
-			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, guid = ${file.guid}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
+			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloading file ${file.index}, id = ${file.id}, size = ${file.size}, eta = ${file.eta}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}`);
 			break;
 		}
 		await new Promise(r => setTimeout(r, 61000)); // Pause for a while before retrying.
