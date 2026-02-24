@@ -77,10 +77,10 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 			const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
 			const sizeStr = `${(size / Math.pow(sizeUnitK, sizeUnitIndex)).toFixed(sizeUnitIndex ? 2 : 0)} ${sizeUnitArr[sizeUnitIndex]}`;
 			console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
-			console.log(`Deleting file ${file.index}, id = ${file.id}`);
+			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Deleting file ${file.index}, id = ${file.id}`);
 			page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json()).then(res => {
 				console.assert(res.code === 200, res);
-				console.log(`Deleted file ${file.index}, id = ${file.id}`);
+				console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Deleted file ${file.index}, id = ${file.id}`);
 			});
 		}
 	} else {
