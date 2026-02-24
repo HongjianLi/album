@@ -18,8 +18,9 @@ const [ page ] = await browser.pages();
 await page.goto('https://www.alipan.com/drive/file/all/backup/653e682a4acb39c8ffdb44e9b77c5ce4f4fb7f1f', { waitUntil: 'networkidle2' }); // 全部文件 › 备份文件 › Music › Albums
 await page.waitForNavigation({ waitUntil: 'networkidle2' }); // Scan QR code to login. Wait for redirection to Music/Albums.
 try {
-for (const directory of directories) {
-	console.log(`Uploading directory ${directory}`);
+for (let directoryIndex = 0; directoryIndex < directories.length; ++directoryIndex) {
+	const directory = directories[directoryIndex];
+	console.log(`Uploading directory ${directoryIndex}, name = ${directory}`);
 	const guid = artists[directory];
 	if (!guid) {
 		console.error(`Artist ${directory} not found in alipan`);
@@ -27,12 +28,12 @@ for (const directory of directories) {
 	}
 	const subdirectories = await fs.readdir(`${root}/${directory}`);
 	console.log(`Found ${subdirectories.length} subdirectories`);
-	for (const subdirectory of subdirectories) {
-		console.log(`Uploading subdirectory ${subdirectory}`);
+	for (let subdirectoryIndex = 0; subdirectoryIndex < subdirectories.length; ++subdirectoryIndex) {
+		const subdirectory = subdirectories[subdirectoryIndex];
 		const subdirectoryPath = `${root}/${directory}/${subdirectory}`;
-		const subdirectorySize = (await getDirectorySize(subdirectoryPath)) / 1024 / 1024; // in MB
+		const subdirectorySize = (await getDirectorySize(subdirectoryPath)) / 1024 / 1024; // Convert bytes to MB
 		const eta = Math.floor(200 * subdirectorySize); // Assuming upload rate is 5 MB/s, equivalent to 1 MB / 200ms.
-		console.log(`size = ${subdirectorySize.toFixed(0)} MB, eta = ${eta} ms`);
+		console.log(`Uploading subdirectory ${subdirectoryIndex}, name = ${subdirectory}, size = ${subdirectorySize.toFixed(0)} MB, eta = ${eta} ms`);
 		await page.goto(`https://www.alipan.com/drive/file/all/backup/${guid}`, {waitUntil: 'networkidle2'}); // 全部文件 › 备份文件 › Music › Albums > ${artist}
 		await page.click('div#adrive-container-create-button');
 		await new Promise(r => setTimeout(r, 2000));
@@ -50,9 +51,7 @@ for (const directory of directories) {
 			console.log('Subdirectory existed. Skip uploading');
 			continue;
 		}
-		console.log('waitForSelector(上传完成)');
 		await page.waitForSelector('span.status-bar-title--o4mhx::-p-text(上传完成)', {timeout: eta});
-		console.log('waitForSelector(上传完成) done');
 		await new Promise(r => setTimeout(r, 2000));
 	}
 }
