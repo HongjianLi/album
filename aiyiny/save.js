@@ -70,12 +70,10 @@ if (entryArr.length) {
 		console.assert(ctHrefArr.length, entry);
 		for (const ctHref of ctHrefArr) {
 			await page.goto(ctHref);
-			let timeout = false;
-			await page.waitForSelector('button::-p-text(转存文件)', { timeout: 4000 }).catch(() => {timeout = true}); // e.g. Error 404
-			if (timeout) {
-				console.log(`Timeout:`, ctHref, entry.date, entry.title);
-				continue;
-			}
+			await Promise.race(['转存文件', '返回上一页'].map(buttonText => page.waitForSelector(`button::-p-text(${buttonText})`)));
+			const title = await page.title();
+			console.log(title);
+			if (title === '找不到文件') continue;
 			await new Promise(resolve => setTimeout(resolve, 1000));
 			await page.evaluate(f => { f ? file_save() : bulk_file_save() }, ctHref.split('/')[3] === 'f'); // ctHref.split('/')[3] could be either f or d. f means file, use file_save(). d means directory, use bulk_file_save().
 			await new Promise(resolve => setTimeout(resolve, 2000));
