@@ -16,6 +16,7 @@ await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/5
 const { iTotalRecords, aaData } = await page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_list&task=allfiles').then(r => r.json());
 console.log(`iTotalRecords = ${iTotalRecords}, aaData.length = ${aaData.length}`); // aaData = [ (aaData.length - iTotalRecords) directories, (iTotalRecords) files ]
 console.assert(iTotalRecords <= aaData.length);
+if (!iTotalRecords) process.exit();
 const fileArr = aaData.slice(-iTotalRecords).reverse().map((aa, index) => ({ // .reverse() to start from the oldest to the newest.
 	index,
 	id: aa[1].match(/file_download\((\d+),/)[1],
