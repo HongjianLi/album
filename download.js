@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import puppeteer from 'puppeteer-core';
 const browser = await puppeteer.launch({
@@ -7,7 +7,7 @@ const browser = await puppeteer.launch({
 });
 browser.setCookie({
 	"name": "ctfile_session",
-	"value": "00483bd3516b8d283a04a2fc74c2c84eb25fd788337cfb6ba94fd03b1de0dccb",
+	"value": "8e429bc6df3d5feba9e6ce4dd13620bd2fbcf8cf970c4a8631f21caec61867ef",
 	"domain": ".ctfile.com",
 	"expires": 2147483646,
 });
@@ -61,7 +61,7 @@ client.on('Browser.downloadWillBegin', (event) => { // event: { frameId, guid, u
 	file.now0 = Date.now();
 	file.downloadWillBegin.resolve(true);
 });
-client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes, receivedBytes, state, filePath? }
+client.on('Browser.downloadProgress', async (event) => { // event: { guid, totalBytes, receivedBytes, state, filePath? }
 	const file = fileArr.find(file => file.guid === event.guid);
 	Object.keys(event).forEach(key => {
 		file[key] = event[key];
@@ -73,16 +73,20 @@ client.on('Browser.downloadProgress', (event) => { // event: { guid, totalBytes,
 		file.downloadProgress.resolve(file.index); // resolve(file.index) instead of resolve(file) because the latter will cause a circular reference.
 		console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Downloaded file ${file.index}, id = ${file.id}, size = ${file.size}, hostname = ${file.hostname}, suggestedFilename = ${file.suggestedFilename}, totalBytes = ${file.totalBytes}, receivedBytes = ${file.receivedBytes}, state = ${file.state}, rate = ${file.rate.toFixed(2)} KB/s`);
 		if (event.state === 'completed') {
-			const { size } = fs.statSync(file.filePath);
+			const { size } = await fs.stat(file.filePath);
 			console.assert(size === file.receivedBytes, `size = ${size}, file.receivedBytes = ${file.receivedBytes}`); // Make sure the received bytes have been flushed to file.
 			const sizeUnitIndex = Math.floor(Math.log(size) / Math.log(sizeUnitK));
 			const sizeStr = `${(size / Math.pow(sizeUnitK, sizeUnitIndex)).toFixed(sizeUnitIndex ? 2 : 0)} ${sizeUnitArr[sizeUnitIndex]}`;
 			console.assert(sizeStr === file.size, `sizeStr = ${sizeStr}, file.size = ${file.size}`);
 			console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Deleting file ${file.index}, id = ${file.id}`);
-			page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json()).then(res => {
+			const deletePage = await browser.newPage();
+			await deletePage.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_delete&task=file_delete&ids=f${file.id}`).then(r => r.json()).then(res => { // The delete task requires the ctfile_session cookie.
 				console.assert(res.code === 200, res);
 				console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Deleted file ${file.index}, id = ${file.id}`);
+			}, reason => {
+				console.error(`${(new Date()).toLocaleTimeString('zh-CN')} Failed to delete file ${file.index}, id = ${file.id}, reason = ${reason}`);
 			});
+			await deletePage.close();
 		}
 	} else {
 		console.assert(event.state === 'inProgress', event);
@@ -93,6 +97,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	const file = fileArr[fileIndex];
 	console.log(`${(new Date()).toLocaleTimeString('zh-CN')} Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
 	for (let nodeIndex = 0; true; ++nodeIndex) {
+		if ((await browser.pages()).length > 1) await new Promise(r => setTimeout(r, 6000)); // Wait for the delete page to close.
 		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
