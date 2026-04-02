@@ -15,6 +15,19 @@ const browser = await puppeteer.launch({
 });
 const [ page ] = await browser.pages();
 await page.goto('https://www.alipan.com/drive/file/all/backup/653e682a4acb39c8ffdb44e9b77c5ce4f4fb7f1f', { waitUntil: 'networkidle2' }); // 全部文件 › 备份文件 › Music › Albums
+const authFrameHandle = await page.waitForSelector('iframe');
+const authFrame = await authFrameHandle.contentFrame();
+const loginFrameHandle = await authFrame.waitForSelector('iframe#alibaba-login-box');
+const loginFrame = await loginFrameHandle.contentFrame();
+await loginFrame.waitForSelector('div.qrcode-img > canvas');
+const qrcode = await loginFrame.$('div.qrcode-img > canvas');
+const qrcodeBoundingBox = await qrcode.boundingBox();
+await qrcode.dispose();
+await loginFrameHandle.dispose();
+await authFrameHandle.dispose();
+await new Promise(resolve => setTimeout(resolve, 2000));
+await page.screenshot({ clip: qrcodeBoundingBox, path: 'alipan-qrcode.png' });
+console.log('Waiting for QR code being scanned');
 await page.waitForNavigation({ waitUntil: 'networkidle2' }); // Scan QR code to login. Wait for redirection to Music/Albums.
 try {
 for (let directoryIndex = 0; directoryIndex < directories.length; ++directoryIndex) {
