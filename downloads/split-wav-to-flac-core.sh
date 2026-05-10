@@ -11,7 +11,7 @@ wavbytecnt=$(stat -c %s "$stem.wav")
 flacbytecnt=$(du -bc *.flac | tail -n 1 | cut -f1)
 ratio=$((100 * flacbytecnt / wavbytecnt)) # bash can only do integer division.
 echo "flac/wav ratio $ratio% = $flacbytecnt / $wavbytecnt"
-if [ $ratio -lt 40 ] || [ $ratio -gt 80 ]; then
+if [ $ratio -lt 30 ] || [ $ratio -gt 80 ]; then
 	echo "Abnormal ratio: $ratio"
 else
 	rm "$stem.wav"
