@@ -17,7 +17,7 @@ else
 	rm "$stem.wav"
 fi
 for flacfile in *.flac; do
-	if [[ $flacfile == *:*.flac || $flacfile == *\?*.flac || $flacfile == *\"*.flac || $flacfile == *\**.flac ]]; then # If the flac filename contains colon : or question mark ? or double quotation mark " or asterisk *, delete them, because they are forbidden in alipan.
-		mv "$flacfile" "$(echo "$flacfile" | sed 's/://g' | sed 's/?//g' | sed 's/"//g' | sed 's/*//g')"
+	if [[ $flacfile == *:*.flac || $flacfile == *\?*.flac || $flacfile == *\"*.flac || $flacfile == *\**.flac || $flacfile == *\<*.flac || $flacfile == *\>*.flac ]]; then # If the flac filename contains colon : or question mark ? or double quotation mark " or asterisk * or less than < or greater than >, delete them, because they are forbidden in alipan.
+		mv "$flacfile" "$(echo "$flacfile" | sed 's/://g' | sed 's/?//g' | sed 's/"//g' | sed 's/*//g' | sed 's/<//g' | sed 's/>//g')"
 	fi
 done
