@@ -8,7 +8,6 @@ console.log(`Found ${directories.length} directories to upload`);
 const artists = await fs.readFile('artists.json').then(JSON.parse); // This file stores the known artists that are already saved in alipan.
 const browser = await puppeteer.launch({
 	executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-	headless: false,
 	defaultViewport: { width: 2560, height: 1200 },
 	args: ['--window-size=2560,1200'],
 	protocolTimeout: 400000, // Set the timeout to 400 s. Assuming a download rate of 5 MB/s, this timeout allows uploading 2000 MB. Default is 180000
