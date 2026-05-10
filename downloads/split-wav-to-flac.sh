@@ -20,8 +20,8 @@ for rarfile in *.rar; do
 	else
 		for (( i=1; i<=$wavcnt; i++ )); do
 			mkdir "CD$i"
+			mv *CD$i*.* *Disc\ $i*.* *Disk\ $i*.* "CD$i" 2>/dev/null
 			cd "CD$i"
-			mv ../*CD$i*.* .
 			../../../split-wav-to-flac-core.sh
 			cd ..
 		done
