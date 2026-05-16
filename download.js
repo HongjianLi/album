@@ -110,7 +110,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		]);
 		if (downloadWillBeginFired) {
 			const [ sizeValue, sizeUnit ] = file.size.split(' ');
-			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit) - 1) / 39.27; // Download rate is limited to 40 KB/s by *-data.bego.cc. Real rate is about 39.27 KB/s.
+			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit)) / 17000; // Download rate is limited to 17 KB/s by *-data.bego.cc.
 			const etaInMinutes = etaInSeconds / 60;
 			const etaInHours = etaInMinutes / 60;
 			const etaH = Math.floor(etaInHours);
