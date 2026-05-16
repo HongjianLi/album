@@ -7,7 +7,7 @@ const browser = await puppeteer.launch({
 });
 browser.setCookie({
 	"name": "ctfile_session",
-	"value": "8e429bc6df3d5feba9e6ce4dd13620bd2fbcf8cf970c4a8631f21caec61867ef",
+	"value": "89b2f1dad1a5f977f4dbf7160d4dd4495e9c7f483ff13c39650737d7647a6e35",
 	"domain": ".ctfile.com",
 	"expires": 2147483646,
 });
