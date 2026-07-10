@@ -46,6 +46,7 @@ for (let directoryIndex = 0; directoryIndex < directories.length; ++directoryInd
 		const eta = Math.floor(200 * subdirectorySize); // Assuming upload rate is 5 MB/s, equivalent to 1 MB / 200ms.
 		console.log(`Uploading subdirectory ${subdirectoryIndex}, name = ${subdirectory}, size = ${subdirectorySize.toFixed(0)} MB, eta = ${eta} ms`);
 		await page.goto(`https://www.alipan.com/drive/file/all/backup/${guid}`, {waitUntil: 'networkidle2'}); // 全部文件 › 备份文件 › Music › Albums > ${artist}
+		await new Promise(r => setTimeout(r, 1200));
 		await page.click('div#adrive-container-create-button');
 		await new Promise(r => setTimeout(r, 2000));
 		const [fileChooser] = await Promise.all([
