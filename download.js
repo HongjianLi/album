@@ -98,6 +98,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 	console.log(`${(new Date()).toLocaleString('zh-CN')} Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
 	for (let nodeIndex = 0; true; ++nodeIndex) {
 		if ((await browser.pages()).length > 1) await new Promise(r => setTimeout(r, 6000)); // Wait for the delete page to close.
+		console.assert((await browser.pages()).length === 1);
 		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
