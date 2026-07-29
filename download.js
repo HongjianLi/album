@@ -108,7 +108,10 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		const node = nodeArr[nodeIndex];
 		file.downloadWillBegin = Promise.withResolvers();
 		const [ downloadWillBeginFired ] = await Promise.all([
-			file.downloadWillBegin.promise,
+			Promise.any([ // file.downloadWillBegin.promise is possibly unsettled and never fulfilled if the ctfile.com server returns 503 Service Unavailable and thus the client Browser.downloadWillBegin event never fires.
+				file.downloadWillBegin.promise,
+				new Promise(r => setTimeout(r, 11000)), // Set a timeout to retry.
+			]),
 			page.click(`a.node-download-btn[data-node="${node}"]`),
 		]);
 		if (downloadWillBeginFired) {
