@@ -26,7 +26,7 @@ const fileArr = aaData.slice(-iTotalRecords).reverse().map((aa, index) => ({ // 
 console.assert(fileArr.length === iTotalRecords);
 console.log(`Found ${fileArr.length} files to download`);
 const sizeUnitArr = ['B', 'KB', 'MB', 'GB', 'TB'];
-const sizeUnitK = 1024;
+const sizeUnitK = 1000;
 let fileIndex;
 await page.setRequestInterception(true);
 page.on('request', req => {
@@ -113,7 +113,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		]);
 		if (downloadWillBeginFired) {
 			const [ sizeValue, sizeUnit ] = file.size.split(' ');
-			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit)) / 17000; // Download rate is limited to 17 KB/s by *-data.bego.cc.
+			const etaInSeconds = sizeValue * Math.pow(sizeUnitK, sizeUnitArr.indexOf(sizeUnit)) / 46750; // Download rate is limited to 46.75 KB/s by *-data.bego.cc.
 			const etaInMinutes = etaInSeconds / 60;
 			const etaInHours = etaInMinutes / 60;
 			const etaH = Math.floor(etaInHours);
