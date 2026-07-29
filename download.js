@@ -94,6 +94,9 @@ client.on('Browser.downloadProgress', async (event) => { // event: { guid, total
 });
 const nodeArr = ['cmnet', 'telecom', 'unicom', 'usw']; // Try downloading in this order of priority: cmnet 中国移动, telecom 中国电信, unicom 中国联通, usw 海外
 for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
+//	while (fileArr.filter(file => file.now0 && !file.now1).length === 2) { // This while-loop hardcodes the concurrency to be 2.
+//		await new Promise(r => setTimeout(r, 61000)); // Pause for a while before retrying.
+//	}
 	const file = fileArr[fileIndex];
 	console.log(`${(new Date()).toLocaleString('zh-CN')} Trying to download file ${file.index}, id = ${file.id}, size = ${file.size}`);
 	for (let nodeIndex = 0; true; ++nodeIndex) {
