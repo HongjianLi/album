@@ -104,7 +104,13 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			await new Promise(r => setTimeout(r, 6000)); // Wait for the delete page to close.
 			console.assert((await browser.pages()).length === 1, '(await browser.pages()).length === 1');
 		}
-		await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`);
+		for (let i = 0; i < 3; ++i) { // Try browsing the url for several times, because timeouts occur occasionally.
+			const response = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`).catch(error => {
+				console.error(`${(new Date()).toLocaleString('zh-CN')} page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}') returned HTTP response status code ${response.status()} ${response.statusText()}. ${error}`);
+			});
+			if (response?.ok()) break;
+			await new Promise(r => setTimeout(r, 5000)); // Pause before retrying.
+		}
 		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
 		if (nodeIndex === nodeArr.length) nodeIndex = 0;
