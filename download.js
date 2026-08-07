@@ -106,7 +106,7 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 		}
 		for (let i = 0; i < 3; ++i) { // Try browsing the url for several times, because timeouts occur occasionally.
 			const response = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`).catch(error => {
-				console.error(`${(new Date()).toLocaleString('zh-CN')} page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}') returned HTTP response status code ${response.status()} ${response.statusText()}. ${error}`);
+				console.error(`${(new Date()).toLocaleString('zh-CN')} page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}') error: ${error}`);
 			});
 			if (response?.ok()) break;
 			await new Promise(r => setTimeout(r, 5000)); // Pause before retrying.
