@@ -15,6 +15,6 @@ echo "$(date +"%F %T.%N") ./split-wav-to-flac.sh"
 ./split-wav-to-flac.sh
 echo "$(date +"%F %T.%N") cd .."
 cd ..
-echo "$(date +"%F %T.%N") node upload.js"
-node upload.js
+#echo "$(date +"%F %T.%N") node upload.js"
+#node upload.js
 echo "$(date +"%F %T.%N") Script completed"
