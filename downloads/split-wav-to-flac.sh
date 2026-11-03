@@ -27,6 +27,15 @@ for rarfile in *.rar; do
 				cd ..
 			fi
 		done
+		for wavfile in *.wav; do
+			[[ -e "$wavfile" ]] || continue # wavfile could be literally "*.wav" if no files match
+			wavfilestem="${wavfile%.*}"
+			mkdir "$wavfilestem"
+			mv "$wavfilestem".* "$wavfilestem"
+			cd "$wavfilestem"
+			../../../split-wav-to-flac-core.sh
+			cd ..
+		done
 	fi
 	cd ../..
 #	gio trash $rarfile
