@@ -19,11 +19,13 @@ for rarfile in *.rar; do
 		../../split-wav-to-flac-core.sh
 	else
 		for (( i=1; i<=$wavcnt; i++ )); do
-			mkdir "CD$i"
-			mv *CD$i*.* *Disc\ $i*.* *Disk\ $i*.* "CD$i" 2>/dev/null
-			cd "CD$i"
-			../../../split-wav-to-flac-core.sh
-			cd ..
+			if [[ -n "$(ls -1 *CD$i*.* *Disc\ $i*.* *Disk\ $i*.* 2>/dev/null)" ]]; then
+				mkdir "CD$i"
+				mv *CD$i*.* *Disc\ $i*.* *Disk\ $i*.* "CD$i" 2>/dev/null
+				cd "CD$i"
+				../../../split-wav-to-flac-core.sh
+				cd ..
+			fi
 		done
 	fi
 	cd ../..
