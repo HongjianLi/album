@@ -104,14 +104,21 @@ for (fileIndex = 0; fileIndex < fileArr.length; ++fileIndex) {
 			await new Promise(r => setTimeout(r, 6000)); // Wait for the delete page to close.
 			console.assert((await browser.pages()).length === 1, '(await browser.pages()).length === 1');
 		}
-		for (let i = 0; i < 3; ++i) { // Try browsing the url for several times, because timeouts occur occasionally.
+		for (let i = 0; i < 5; ++i) { // Try browsing the url for several times, because timeouts occur occasionally.
 			const response = await page.goto(`https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}`).catch(error => {
-				if (i + 1 === 3) console.error(`${(new Date()).toLocaleString('zh-CN')} page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}') error: ${error}. Try increasing the trial count.`);
+				if (i + 1 === 5) console.error(`${(new Date()).toLocaleString('zh-CN')} page.goto('https://home.ctfile.com/iajax.php?item=file_act&action=file_download&file_id=${file.id}') error: ${error}. Try increasing the trial count.`);
 			});
-			if (response?.ok()) break;
+			if (response?.ok()) {
+				const a = await page.waitForSelector('a.node-download-btn[data-node]').catch(error => { // Wait for the data-node.
+					if (i + 1 === 5) console.error(`${(new Date()).toLocaleString('zh-CN')} page.waitForSelector('a.node-download-btn[data-node]') error: ${error}. Try increasing the trial count.`);
+				});
+//				const nodeArr1 = await page.$$eval('a.node-download-btn', elements => elements.map(el => el.getAttribute('data-node')));
+//				console.assert(nodeArr1.length === 4, 'nodeArr1.length === 4', nodeArr1.length);
+//				console.assert(nodeArr1[nodeArr1.length - 1] === 'usw', 'nodeArr1[nodeArr1.length - 1] === usw', nodeArr1);
+				if (a) break;
+			}
 			await new Promise(r => setTimeout(r, 5000)); // Pause before retrying.
 		}
-		await page.waitForSelector('a.node-download-btn[data-node="usw"]'); // Wait for the last data-node, which is usw.
 		await page.$$eval('a.node-download-btn', elements => elements.forEach(el => el.removeAttribute('target'))); // The original <a> element has target="_blank". Remove this attribute to avoid opening a new page, so that the download events will be fired from the current page.
 		if (nodeIndex === nodeArr.length) nodeIndex = 0;
 		const node = nodeArr[nodeIndex];
