@@ -21,7 +21,7 @@ for (const c of cArr) {
 	console.log(title);
 	if (title === '找不到文件') continue;
 	await new Promise(resolve => setTimeout(resolve, 1000));
-	await page.evaluate(f => { f ? file_save() : bulk_file_save() }, c.split('/')[3] === 'f');
+	await page.click(`button::-p-text(转存文件)`);
 	await new Promise(resolve => setTimeout(resolve, 2000));
 }
 await browser.close();
