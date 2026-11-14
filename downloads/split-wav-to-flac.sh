@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+find ~/Downloads/ -type f -iname "*.rar" -print0 | xargs -0 mv -t .
 dot='.'
 rarcnt=0
 for rarfile in *.rar; do
